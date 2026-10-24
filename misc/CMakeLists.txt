@@ -197,3 +197,11 @@ install(
   FILES
     ${CMAKE_CURRENT_BINARY_DIR}/share/polkit-1/actions/org.deepin.linglong.PackageManager1.policy
   DESTINATION ${CMAKE_INSTALL_DATADIR}/polkit-1/actions)
+
+if(ENABLE_TESTING AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  add_executable(namespace-erange-test tests/namespace_erange_test.cpp)
+  target_link_libraries(namespace-erange-test PRIVATE linglong::utils)
+  set_property(TARGET namespace-erange-test APPEND_STRING PROPERTY LINK_FLAGS
+               " -Wl,--wrap=getpwuid_r -Wl,--wrap=sysconf")
+  add_test(NAME namespace-erange COMMAND namespace-erange-test)
+endif()

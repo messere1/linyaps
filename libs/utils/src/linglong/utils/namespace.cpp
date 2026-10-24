@@ -33,14 +33,20 @@ utils::error::Result<std::string> getUserName(uid_t uid)
     LINGLONG_TRACE("get user name");
 
     auto bufSize = sysconf(_SC_GETPW_R_SIZE_MAX);
-    if (bufSize < 0) {
+    if (bufSize <= 0) {
         bufSize = 1024;
     }
 
     std::vector<char> buf(bufSize);
     struct passwd pw;
     struct passwd *result{ nullptr };
-    auto res = getpwuid_r(uid, &pw, buf.data(), buf.size(), &result);
+    int res;
+    while ((res = getpwuid_r(uid, &pw, buf.data(), buf.size(), &result)) == ERANGE) {
+        if (buf.size() > buf.max_size() / 2) {
+            return LINGLONG_ERR("user entry is too large");
+        }
+        buf.resize(buf.size() * 2);
+    }
     if (res != 0) {
         return LINGLONG_ERR(
           fmt::format("failed to get user name: {}", common::error::errorString(res)).c_str());
