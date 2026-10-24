@@ -11,6 +11,7 @@ extern "C" {
 }
 
 #include <QEventLoop>
+#include <QMetaObject>
 
 #include <memory>
 #include <thread>
@@ -35,7 +36,8 @@ public:
         std::thread t(
           [&loop, &func, &response](apiClient_t *client, Args... args) {
               response = func(client, args...);
-              loop.exit();
+              // Queue completion even when the request finishes before exec().
+              QMetaObject::invokeMethod(&loop, &QEventLoop::quit, Qt::QueuedConnection);
           },
           client,
           args...);
