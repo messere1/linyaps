@@ -5,6 +5,7 @@
 #include "terminal_notifier.h"
 
 #include <iostream>
+#include <sstream>
 
 namespace linglong::cli {
 
@@ -58,10 +59,21 @@ TerminalNotifier::request(const api::types::v1::InteractionRequest &request)
     std::cout << msg << std::endl;
 
     std::string action;
-    std::cin >> action;
     auto ret = api::types::v1::InteractionReply{};
     if (needReply) {
+        // Consume the complete line so the next Enter prompt cannot reuse a
+        // newline left behind by formatted extraction.
+        do {
+            std::string line;
+            if (!std::getline(std::cin, line)) {
+                return LINGLONG_ERR("failed to read action from terminal");
+            }
+            std::istringstream input(line);
+            input >> action;
+        } while (action.empty());
         ret.action = std::move(action);
+    } else if (!std::getline(std::cin, action)) {
+        return LINGLONG_ERR("failed to read Enter key from terminal");
     }
 
     return ret;
